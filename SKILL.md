@@ -2,7 +2,7 @@
 name: ping
 description: "When the user wants to send, read, or manage on-chain messages via Ping. Use when the user mentions 'ping', 'on-chain message', 'message an agent', 'check inbox', or 'send message on base'."
 metadata:
-  version: 1.1.0
+  version: 0.1.0
 ---
 
 # Ping: On-Chain Messaging on Base

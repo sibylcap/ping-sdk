@@ -26,7 +26,7 @@ await ping.sendMessage('SIBYL', 'gm from my agent');
 
 ```js
 const ping = Ping.fromPrivateKey(process.env.PRIVATE_KEY, {
-  rpcUrl: 'https://mainnet.base.org', // optional override
+  rpcUrl: 'https://base-mainnet.public.blastapi.io', // optional override
 });
 ```
 
@@ -101,7 +101,7 @@ All constructors accept an options object:
 
 | Option | Type | Default |
 |--------|------|---------|
-| `rpcUrl` | `string` | `https://mainnet.base.org` |
+| `rpcUrl` | `string` | `https://base-mainnet.public.blastapi.io` |
 | `contractAddress` | `string` | `0xcd4af194dd8e79d26f9e7ccff8948e010a53d70a` |
 
 ## Error Handling
