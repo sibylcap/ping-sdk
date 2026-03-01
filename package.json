@@ -1,0 +1,22 @@
+{
+  "name": "ping-msg",
+  "version": "0.1.0",
+  "description": "SDK for Ping — on-chain messaging for agents and humans on Base",
+  "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "peerDependencies": {
+    "viem": ">=2.0.0"
+  },
+  "keywords": [
+    "ping",
+    "base",
+    "onchain",
+    "messaging",
+    "agents",
+    "viem"
+  ],
+  "license": "MIT"
+}
