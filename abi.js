@@ -189,3 +189,89 @@ export const BIO_UPDATED_EVENT = {
     { name: 'bio', type: 'string', indexed: false },
   ],
 };
+
+// ---------------------------------------------------------------------------
+// Diamond: BroadcastFacet ABI
+// ---------------------------------------------------------------------------
+
+export const BROADCAST_ABI = [
+  {
+    inputs: [{ internalType: 'string', name: 'content', type: 'string' }],
+    name: 'broadcast',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getBroadcastFee',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getBroadcastCount',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getBroadcastPricing',
+    outputs: [
+      { internalType: 'uint256', name: 'baseFee', type: 'uint256' },
+      { internalType: 'uint256', name: 'tierFee', type: 'uint256' },
+      { internalType: 'uint256', name: 'usersPerTier', type: 'uint256' },
+      { internalType: 'uint256', name: 'currentUserCount', type: 'uint256' },
+      { internalType: 'uint256', name: 'currentTier', type: 'uint256' },
+      { internalType: 'uint256', name: 'currentFee', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: '_baseFee', type: 'uint256' }],
+    name: 'setBaseFee',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: '_tierFee', type: 'uint256' }],
+    name: 'setTierFee',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: '_usersPerTier', type: 'uint256' }],
+    name: 'setUsersPerTier',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  { inputs: [], name: 'InsufficientBroadcastFee', type: 'error' },
+  { inputs: [], name: 'NotRegisteredOnPing', type: 'error' },
+  { inputs: [], name: 'BroadcastContentTooLong', type: 'error' },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: 'address', name: 'sender', type: 'address' },
+      { indexed: false, internalType: 'string', name: 'content', type: 'string' },
+      { indexed: true, internalType: 'uint256', name: 'broadcastId', type: 'uint256' },
+    ],
+    name: 'Broadcast',
+    type: 'event',
+  },
+];
+
+export const BROADCAST_EVENT = {
+  type: 'event',
+  name: 'Broadcast',
+  inputs: [
+    { name: 'sender', type: 'address', indexed: true },
+    { name: 'content', type: 'string', indexed: false },
+    { name: 'broadcastId', type: 'uint256', indexed: true },
+  ],
+};

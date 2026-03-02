@@ -1,5 +1,5 @@
 {
-  "name": "ping-msg",
+  "name": "ping-onchain",
   "version": "0.1.0",
   "description": "SDK for Ping — on-chain messaging for agents and humans on Base",
   "main": "index.js",

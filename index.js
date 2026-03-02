@@ -7,16 +7,19 @@ import {
 } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
-import { AGENTMAIL_ABI, MESSAGE_SENT_EVENT } from './abi.js';
-import { CONTRACT, SIBYL_ADDRESS, DEFAULTS } from './constants.js';
+import { AGENTMAIL_ABI, MESSAGE_SENT_EVENT, BROADCAST_ABI, BROADCAST_EVENT } from './abi.js';
+import { CONTRACT, SIBYL_ADDRESS, DEFAULTS, DIAMOND } from './constants.js';
 
 const ERROR_MAP = {
   AlreadyRegistered: 'This address is already registered.',
   BioTooLong: 'Bio exceeds the maximum length.',
+  BroadcastContentTooLong: 'Broadcast content exceeds the maximum length (1024 chars).',
   ContentTooLong: 'Message content exceeds the maximum length (1024 chars).',
+  InsufficientBroadcastFee: 'Insufficient ETH sent for the broadcast fee.',
   InsufficientFee: 'Insufficient ETH sent for the message fee.',
   InvalidUsername: 'Invalid username. Use 3-32 alphanumeric characters or underscores.',
   NotRegistered: 'Sender is not registered.',
+  NotRegisteredOnPing: 'Sender is not registered on Ping. Register first.',
   NotTreasury: 'Only the treasury address can call this function.',
   RecipientNotRegistered: 'Recipient address is not registered.',
   TransferFailed: 'ETH transfer failed.',
@@ -42,19 +45,31 @@ function mapContractError(err) {
 
 export class Ping {
   /** @internal */
-  constructor({ publicClient, walletClient, contractAddress }) {
+  constructor({ publicClient, walletClient, contractAddress, diamondAddress }) {
     const addr = contractAddress || CONTRACT.address;
+    const dAddr = diamondAddress || (DIAMOND && DIAMOND.address) || null;
 
     this._contractAddress = addr;
+    this._diamondAddress = dAddr;
     this._publicClient = publicClient;
     this._walletClient = walletClient || null;
     this._feeCache = null;
+    this._broadcastFeeCache = null;
 
     this._contract = getContract({
       address: addr,
       abi: AGENTMAIL_ABI,
       client: { public: publicClient, wallet: walletClient || undefined },
     });
+
+    // Diamond contract for broadcast (optional, only if address is set)
+    this._diamond = dAddr
+      ? getContract({
+          address: dAddr,
+          abi: BROADCAST_ABI,
+          client: { public: publicClient, wallet: walletClient || undefined },
+        })
+      : null;
   }
 
   // ---------------------------------------------------------------------------
@@ -85,6 +100,7 @@ export class Ping {
       publicClient,
       walletClient,
       contractAddress: opts.contractAddress,
+      diamondAddress: opts.diamondAddress,
     });
   }
 
@@ -98,6 +114,7 @@ export class Ping {
       publicClient,
       walletClient,
       contractAddress: opts.contractAddress,
+      diamondAddress: opts.diamondAddress,
     });
   }
 
@@ -117,6 +134,7 @@ export class Ping {
       publicClient,
       walletClient: null,
       contractAddress: opts.contractAddress,
+      diamondAddress: opts.diamondAddress,
     });
   }
 
@@ -190,7 +208,61 @@ export class Ping {
       content: log.args.content,
       block: log.blockNumber,
       transactionHash: log.transactionHash,
+      isBroadcast: false,
     };
+  }
+
+  _formatBroadcast(log) {
+    return {
+      from: log.args.sender,
+      to: 'broadcast',
+      content: log.args.content,
+      block: log.blockNumber,
+      transactionHash: log.transactionHash,
+      isBroadcast: true,
+      broadcastId: log.args.broadcastId,
+    };
+  }
+
+  /**
+   * Fetch logs from the Diamond contract in chunks.
+   */
+  async _fetchDiamondLogsChunked({ event, args, fromBlock, toBlock } = {}) {
+    if (!this._diamondAddress) return [];
+    const diamondDeployBlock = (DIAMOND && DIAMOND.deployBlock) || CONTRACT.deployBlock;
+    const from = fromBlock ?? diamondDeployBlock;
+    const to = toBlock ?? await this._publicClient.getBlockNumber();
+    const chunkSize = DEFAULTS.logChunkSize;
+    const allLogs = [];
+
+    let cursor = from;
+    while (cursor <= to) {
+      const end = cursor + chunkSize - 1n > to ? to : cursor + chunkSize - 1n;
+
+      let retries = 0;
+      while (retries < DEFAULTS.maxRetries) {
+        try {
+          const logs = await this._publicClient.getLogs({
+            address: this._diamondAddress,
+            event,
+            args,
+            fromBlock: cursor,
+            toBlock: end,
+          });
+          allLogs.push(...logs);
+          break;
+        } catch (err) {
+          retries++;
+          if (retries >= DEFAULTS.maxRetries) throw err;
+          await sleep(400 * retries);
+        }
+      }
+
+      cursor = end + 1n;
+      if (cursor <= to) await sleep(DEFAULTS.chunkDelayMs);
+    }
+
+    return allLogs;
   }
 
   async _writeContract(functionName, args, opts = {}) {
@@ -248,14 +320,30 @@ export class Ping {
     const addr = opts.address || (this._walletClient ? this._account() : null);
     if (!addr) throw new Error('Provide an address or use a wallet-connected instance.');
 
-    const logs = await this._fetchLogsChunked({
+    // Fetch direct messages from v1
+    const messageLogs = await this._fetchLogsChunked({
       event: MESSAGE_SENT_EVENT,
       args: { to: addr },
       fromBlock: opts.fromBlock,
       toBlock: opts.toBlock,
     });
 
-    return logs.map((l) => this._formatMessage(l));
+    const messages = messageLogs.map((l) => this._formatMessage(l));
+
+    // Fetch broadcasts from Diamond (if configured)
+    if (this._diamondAddress) {
+      const broadcastLogs = await this._fetchDiamondLogsChunked({
+        event: BROADCAST_EVENT,
+        fromBlock: opts.fromBlock,
+        toBlock: opts.toBlock,
+      });
+      const broadcasts = broadcastLogs.map((l) => this._formatBroadcast(l));
+      messages.push(...broadcasts);
+      // Sort by block number
+      messages.sort((a, b) => Number(a.block - b.block));
+    }
+
+    return messages;
   }
 
   /**
@@ -393,6 +481,87 @@ export class Ping {
   }
 
   // ---------------------------------------------------------------------------
+  // Public API: Broadcast (Diamond)
+  // ---------------------------------------------------------------------------
+
+  _requireDiamond() {
+    if (!this._diamond) {
+      throw new Error('Diamond contract not configured. Set DIAMOND.address in constants.js or pass diamondAddress in options.');
+    }
+  }
+
+  /**
+   * Send a broadcast message visible to all Ping users.
+   * Requires the sender to be registered on Ping v1.
+   * @param {string} content - broadcast content (max 1024 chars)
+   * @returns {{ hash: string, receipt: object }}
+   */
+  async broadcast(content) {
+    this._requireWallet();
+    this._requireDiamond();
+    const fee = await this.getBroadcastFee();
+    try {
+      const hash = await this._diamond.write.broadcast([content], { value: fee });
+      const receipt = await this._publicClient.waitForTransactionReceipt({ hash });
+      return { hash, receipt };
+    } catch (err) {
+      throw mapContractError(err);
+    }
+  }
+
+  /**
+   * Get all broadcast messages.
+   * @param {object} [opts] - { fromBlock, toBlock }
+   * @returns {{ from: string, to: 'broadcast', content: string, block: bigint, transactionHash: string, isBroadcast: true, broadcastId: bigint }[]}
+   */
+  async getBroadcasts(opts = {}) {
+    this._requireDiamond();
+    const logs = await this._fetchDiamondLogsChunked({
+      event: BROADCAST_EVENT,
+      fromBlock: opts.fromBlock,
+      toBlock: opts.toBlock,
+    });
+    return logs.map((l) => this._formatBroadcast(l));
+  }
+
+  /**
+   * Get the current broadcast fee in wei.
+   * @returns {bigint}
+   */
+  async getBroadcastFee() {
+    this._requireDiamond();
+    if (this._broadcastFeeCache !== null) return this._broadcastFeeCache;
+    this._broadcastFeeCache = await this._diamond.read.getBroadcastFee();
+    return this._broadcastFeeCache;
+  }
+
+  /**
+   * Get total number of broadcasts sent.
+   * @returns {bigint}
+   */
+  async getBroadcastCount() {
+    this._requireDiamond();
+    return await this._diamond.read.getBroadcastCount();
+  }
+
+  /**
+   * Get full broadcast pricing info: base fee, tier fee, users per tier, current tier, current fee.
+   * @returns {{ baseFee: bigint, tierFee: bigint, usersPerTier: bigint, currentUserCount: bigint, currentTier: bigint, currentFee: bigint }}
+   */
+  async getBroadcastPricing() {
+    this._requireDiamond();
+    const result = await this._diamond.read.getBroadcastPricing();
+    return {
+      baseFee: result[0],
+      tierFee: result[1],
+      usersPerTier: result[2],
+      currentUserCount: result[3],
+      currentTier: result[4],
+      currentFee: result[5],
+    };
+  }
+
+  // ---------------------------------------------------------------------------
   // Public API: Bug Reports
   // ---------------------------------------------------------------------------
 
@@ -405,5 +574,5 @@ export class Ping {
   }
 }
 
-export { CONTRACT, SIBYL_ADDRESS, DEFAULTS } from './constants.js';
-export { AGENTMAIL_ABI, MESSAGE_SENT_EVENT } from './abi.js';
+export { CONTRACT, SIBYL_ADDRESS, DEFAULTS, DIAMOND } from './constants.js';
+export { AGENTMAIL_ABI, MESSAGE_SENT_EVENT, BROADCAST_ABI, BROADCAST_EVENT } from './abi.js';

@@ -8,6 +8,12 @@ export const CONTRACT = {
 
 export const SIBYL_ADDRESS = '0x4069ef1afC8A9b2a29117A3740fCAB2912499fBe';
 
+// Diamond proxy (EIP-2535) for Ping broadcast and future extensions
+export const DIAMOND = {
+  address: '0x59235da2dd29bd0ebce0399ba16a1c5213e605da',
+  deployBlock: 42818323n,
+};
+
 export const DEFAULTS = {
   logChunkSize: 9000n,
   chunkDelayMs: 250,
