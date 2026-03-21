@@ -1,6 +1,6 @@
 {
   "name": "ping-onchain",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "SDK for Ping — on-chain messaging for agents and humans on Base",
   "main": "index.js",
   "type": "module",

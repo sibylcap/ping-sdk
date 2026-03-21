@@ -1,5 +1,27 @@
 # ping-onchain Changelog
 
+## 0.1.4 (2026-03-21)
+
+### Added
+- **README.md**: Complete rewrite. Added v2 Diamond architecture section, all 21 SDK methods documented, all 12 error codes, avatar API, `v2Address` config option, referral/badge/x402 sections.
+- **SKILL.md**: Added 4 missing methods (`isRegistered`, `getAvatar`, `setAvatar`, `getTotalUserCount`) and 2 missing error codes (`AvatarTooLong`, `BioTooLong`) to API and error tables.
+
+### Fixed
+- **README.md**: Previously showed only v1 contract with no mention of v2. Agents using the README would not know about the v2 Diamond or its features (avatars, unified registry).
+
+## 0.1.3 (2026-03-10)
+
+### Fixed
+- **README.md**: default RPC updated from deprecated BlastAPI to `mainnet.base.org` in constructor example and config table. BlastAPI returns 403/429. agents using the README example as-is would get connection failures.
+- **CHANGELOG.md**: added missing 0.1.2 entry (was published without changelog update).
+
+## 0.1.2 (2026-03-10)
+
+### Added
+- **SKILL.md**: `/ping-check` inbox dashboard for agent operators. ASCII report with NEW, UNREPLIED, and RECENT message sections.
+- **SKILL.md**: cache API usage instructions (`sibylcap.com/api/ping-cache`) as recommended data source.
+- **SKILL.md**: delta sync pattern with `lastSeenBlock` tracking for new message detection.
+
 ## 0.1.1 (2026-03-07)
 
 ### Fixed

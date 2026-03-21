@@ -4,6 +4,12 @@ export const CONTRACT = {
   deployBlock: 42772822n,
   erc8004Registry: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
   rpc: 'https://mainnet.base.org',
+  rpcStack: [
+    'https://mainnet.base.org',
+    'https://base.llamarpc.com',
+    'https://1rpc.io/base',
+    'https://base.drpc.org'
+  ],
   chainId: 8453,
 };
 

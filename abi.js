@@ -190,6 +190,228 @@ export const BIO_UPDATED_EVENT = {
   ],
 };
 
+export const AVATAR_UPDATED_EVENT = {
+  type: 'event',
+  name: 'AvatarUpdated',
+  inputs: [
+    { name: 'wallet', type: 'address', indexed: true },
+    { name: 'avatar', type: 'string', indexed: false },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Ping v2 Diamond ABI (superset of v1 + new functions)
+// ---------------------------------------------------------------------------
+
+export const PING_V2_ABI = [
+  // --- Registry ---
+  {
+    inputs: [{ internalType: 'string', name: 'username', type: 'string' }],
+    name: 'register',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'wallet', type: 'address' }],
+    name: 'getUsername',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'string', name: 'username', type: 'string' }],
+    name: 'getAddress',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'wallet', type: 'address' }],
+    name: 'isRegistered',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getUserCount',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: 'index', type: 'uint256' }],
+    name: 'getUserAtIndex',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // --- Bio ---
+  {
+    inputs: [{ internalType: 'string', name: 'bio', type: 'string' }],
+    name: 'setBio',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'wallet', type: 'address' }],
+    name: 'getBio',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // --- Avatar (v2 only) ---
+  {
+    inputs: [{ internalType: 'string', name: 'avatar', type: 'string' }],
+    name: 'setAvatar',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'address', name: 'wallet', type: 'address' }],
+    name: 'getAvatar',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // --- Messaging ---
+  {
+    inputs: [
+      { internalType: 'address', name: 'to', type: 'address' },
+      { internalType: 'string', name: 'content', type: 'string' },
+    ],
+    name: 'sendMessage',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'messageFee',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // --- Broadcast ---
+  {
+    inputs: [{ internalType: 'string', name: 'content', type: 'string' }],
+    name: 'broadcast',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getBroadcastFee',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getBroadcastCount',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getBroadcastPricing',
+    outputs: [
+      { internalType: 'uint256', name: 'baseFee', type: 'uint256' },
+      { internalType: 'uint256', name: 'tierFee', type: 'uint256' },
+      { internalType: 'uint256', name: 'usersPerTier', type: 'uint256' },
+      { internalType: 'uint256', name: 'totalUsers', type: 'uint256' },
+      { internalType: 'uint256', name: 'currentTier', type: 'uint256' },
+      { internalType: 'uint256', name: 'currentFee', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getTotalUserCount',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  // --- Admin ---
+  {
+    inputs: [],
+    name: 'treasury',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'v1Contract',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'withdrawFees',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ internalType: 'uint256', name: '_fee', type: 'uint256' }],
+    name: 'setMessageFee',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  // --- Events ---
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: 'address', name: 'from', type: 'address' },
+      { indexed: true, internalType: 'address', name: 'to', type: 'address' },
+      { indexed: false, internalType: 'string', name: 'content', type: 'string' },
+    ],
+    name: 'MessageSent',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: 'address', name: 'wallet', type: 'address' },
+      { indexed: false, internalType: 'string', name: 'username', type: 'string' },
+    ],
+    name: 'UserRegistered',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: 'address', name: 'sender', type: 'address' },
+      { indexed: false, internalType: 'string', name: 'content', type: 'string' },
+      { indexed: true, internalType: 'uint256', name: 'broadcastId', type: 'uint256' },
+    ],
+    name: 'Broadcast',
+    type: 'event',
+  },
+  // --- Errors ---
+  { inputs: [], name: 'AlreadyRegistered', type: 'error' },
+  { inputs: [], name: 'UsernameTaken', type: 'error' },
+  { inputs: [], name: 'InvalidUsername', type: 'error' },
+  { inputs: [], name: 'NotRegistered', type: 'error' },
+  { inputs: [], name: 'RecipientNotRegistered', type: 'error' },
+  { inputs: [], name: 'ContentTooLong', type: 'error' },
+  { inputs: [], name: 'InsufficientFee', type: 'error' },
+  { inputs: [], name: 'BioTooLong', type: 'error' },
+  { inputs: [], name: 'AvatarTooLong', type: 'error' },
+  { inputs: [], name: 'InsufficientBroadcastFee', type: 'error' },
+  { inputs: [], name: 'NotRegisteredOnPing', type: 'error' },
+  { inputs: [], name: 'BroadcastContentTooLong', type: 'error' },
+];
+
 // ---------------------------------------------------------------------------
 // Diamond: BroadcastFacet ABI
 // ---------------------------------------------------------------------------
