@@ -844,6 +844,57 @@ export class Ping {
   }
 
   // ---------------------------------------------------------------------------
+  // Public API: Inbox with Reply Status
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get inbox messages annotated with reply status.
+   * Each message includes a `replied` boolean and `replyBlock` (block of your
+   * most recent reply to that sender, or null).
+   *
+   * @param {object} [opts] - { address, fromBlock, toBlock }
+   * @returns {Array<{ from, to, content, block, transactionHash, isBroadcast, replied, replyBlock }>}
+   *
+   * @example
+   * const inbox = await ping.getInboxWithStatus();
+   * for (const msg of inbox) {
+   *   const tag = msg.replied ? '✓' : '⏳';
+   *   console.log(`${tag} [${msg.from}] ${msg.content.slice(0, 60)}`);
+   * }
+   */
+  async getInboxWithStatus(opts = {}) {
+    const addr = opts.address || (this._walletClient ? this._account() : null);
+    if (!addr) throw new Error('Provide an address or use a wallet-connected instance.');
+
+    // Fetch inbox and sent in parallel
+    const [inbox, sent] = await Promise.all([
+      this.getInbox({ ...opts, address: addr }),
+      this.getSent({ ...opts, address: addr }),
+    ]);
+
+    // Build map: recipient address → highest block we sent to them
+    const lastReplyBlock = {};
+    for (const msg of sent) {
+      const to = (msg.to || '').toLowerCase();
+      const block = Number(msg.block);
+      if (!lastReplyBlock[to] || block > lastReplyBlock[to]) {
+        lastReplyBlock[to] = block;
+      }
+    }
+
+    // Annotate each inbox message
+    return inbox.map(msg => {
+      if (msg.isBroadcast) {
+        return { ...msg, replied: null, replyBlock: null };
+      }
+      const sender = (msg.from || '').toLowerCase();
+      const replyBlock = lastReplyBlock[sender] || null;
+      const replied = replyBlock !== null && replyBlock > Number(msg.block);
+      return { ...msg, replied, replyBlock };
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Public API: Bug Reports
   // ---------------------------------------------------------------------------
 
